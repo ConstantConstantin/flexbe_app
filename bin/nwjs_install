@@ -30,6 +30,8 @@ fi
 ARCH="x64"
 if [ `uname -m` == "x86_64" ]; then
 	ARCH="x64"
+elif [ `uname -m` == "aarch64" ]; then
+	ARCH="arm64"
 else
 	ARCH="ia32"
 fi
@@ -37,18 +39,32 @@ fi
 # ready to go
 echo "Downloading nwjs..."
 set +e
-main_uri="https://dl.nwjs.io/$VERSION/nwjs-$VERSION-$OS-$ARCH.tar.gz"
-curl -sL -o $TEMPFILE $main_uri
-status=$?
-if [ $status -ne 0 ] ; then
-	echo "Failed to download '$main_uri': $status"
-	echo "Using mirror instead..."
-	mirror_uri="https://npm.taobao.org/mirrors/nwjs/$VERSION/nwjs-$VERSION-$OS-$ARCH.tar.gz"
-	curl -sL -o $TEMPFILE $mirror_uri
+if [ "$ARCH" == "arm64" ]; then
+	main_uri="https://github.com/LeonardLaszlo/nw.js-armv7-binaries/releases/download/nw60-arm64_2022-01-08/nw60-arm64_2022-01-08.tar.gz"
+	curl -sL -o $TEMPFILE $main_uri
 	status=$?
 	if [ $status -ne 0 ] ; then
-		echo "Failed to download '$mirror_uri': $status"
+		echo "Failed to download '$main_uri': $status"
 		exit "$status"
+	fi
+	tar -xzf $TEMPFILE --strip-components 1
+	rm $TEMPFILE
+	mv docker/dist/nwjs-chrome-ffmpeg-branding/nwjs-v0.60.1-linux-arm64.tar.gz nwjs.tar.gz
+	rm -rf docker
+else
+	main_uri="https://dl.nwjs.io/$VERSION/nwjs-$VERSION-$OS-$ARCH.tar.gz"
+	curl -sL -o $TEMPFILE $main_uri
+	status=$?
+	if [ $status -ne 0 ] ; then
+		echo "Failed to download '$main_uri': $status"
+		echo "Using mirror instead..."
+		mirror_uri="https://npm.taobao.org/mirrors/nwjs/$VERSION/nwjs-$VERSION-$OS-$ARCH.tar.gz"
+		curl -sL -o $TEMPFILE $mirror_uri
+		status=$?
+		if [ $status -ne 0 ] ; then
+			echo "Failed to download '$mirror_uri': $status"
+			exit "$status"
+		fi
 	fi
 fi
 set -e
